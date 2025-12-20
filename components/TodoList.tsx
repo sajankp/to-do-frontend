@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Modal } from './Modal';
+import { VoiceAssistant } from './VoiceAssistant';
 import { Plus, Trash2, Edit2, Search, LogOut, LayoutList, Calendar, Flag, AlertTriangle } from 'lucide-react';
 
 interface TodoListProps {
@@ -246,6 +247,9 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
           </div>
         )}
       </main>
+
+      {/* Voice Assistant */}
+      <VoiceAssistant todos={todos} onUpdate={fetchTodos} />
 
       {/* Add/Edit Modal */}
       <Modal
