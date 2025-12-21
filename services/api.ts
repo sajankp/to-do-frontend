@@ -5,17 +5,21 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const getAuthHeaders = (): HeadersInit => {
   const token = localStorage.getItem('token');
-  return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  return token
+    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    : { 'Content-Type': 'application/json' };
 };
 
-const handleResponse = async <T,>(response: Response): Promise<T> => {
+const handleResponse = async <T>(response: Response): Promise<T> => {
   if (!response.ok) {
     if (response.status === 401) {
       localStorage.removeItem('token');
       window.location.hash = '';
       throw new Error('Unauthorized');
     }
-    const errorData = await response.json().catch(() => ({ detail: 'An unexpected error occurred' }));
+    const errorData = await response
+      .json()
+      .catch(() => ({ detail: 'An unexpected error occurred' }));
     const message = Array.isArray(errorData.detail)
       ? errorData.detail.map((e: any) => e.msg).join(', ')
       : errorData.detail || 'API Error';
@@ -64,7 +68,12 @@ export const api = {
     return handleResponse<Todo[]>(response);
   },
 
-  createTodo: async (title: string, description: string, priority: string, due_date: string): Promise<Todo> => {
+  createTodo: async (
+    title: string,
+    description: string,
+    priority: string,
+    due_date: string
+  ): Promise<Todo> => {
     const response = await fetch(`${BASE_URL}/todo`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -92,6 +101,6 @@ export const api = {
       throw new Error(errorData.detail || 'Failed to delete');
     }
     // Consume response body as API returns JSON on success
-    await response.json().catch(() => { });
+    await response.json().catch(() => {});
   },
 };

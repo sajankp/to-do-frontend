@@ -10,8 +10,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/1qsN9_0ObAyyKDwE9ZRyEQ8
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
    `npm install`
@@ -76,7 +75,7 @@ sequenceDiagram
     API Service->>Backend: POST /token
     Backend-->>API Service: JWT Token
     API Service-->>App: Store in localStorage
-    
+
     User->>App: CRUD Operations
     App->>API Service: api.getTodos/createTodo/etc
     API Service->>Backend: Request with Bearer token
@@ -86,20 +85,20 @@ sequenceDiagram
 
 ### Key Components
 
-| Component | Responsibility |
-|-----------|---------------|
-| **App.tsx** | Authentication state management, routing between auth and todo views |
-| **AuthForm.tsx** | User login and registration with auto-login after signup |
-| **TodoList.tsx** | Full todo CRUD operations, filtering, search, and priority management |
-| **VoiceAssistant.tsx** | Gemini AI integration for voice-controlled todo management |
-| **api.ts** | Centralized API client with JWT token handling and error management |
+| Component              | Responsibility                                                        |
+| ---------------------- | --------------------------------------------------------------------- |
+| **App.tsx**            | Authentication state management, routing between auth and todo views  |
+| **AuthForm.tsx**       | User login and registration with auto-login after signup              |
+| **TodoList.tsx**       | Full todo CRUD operations, filtering, search, and priority management |
+| **VoiceAssistant.tsx** | Gemini AI integration for voice-controlled todo management            |
+| **api.ts**             | Centralized API client with JWT token handling and error management   |
 
 ### Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Framework | React 19 + TypeScript |
-| Build Tool | Vite 6 |
-| Icons | Lucide React |
-| AI/Voice | Google GenAI SDK |
-| Backend | FastAPI (Render hosted) |
+| Layer      | Technology              |
+| ---------- | ----------------------- |
+| Framework  | React 19 + TypeScript   |
+| Build Tool | Vite 6                  |
+| Icons      | Lucide React            |
+| AI/Voice   | Google GenAI SDK        |
+| Backend    | FastAPI (Render hosted) |
