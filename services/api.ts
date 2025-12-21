@@ -1,6 +1,7 @@
 import { AuthResponse, Todo } from '../types';
 
-const BASE_URL = 'https://to-do-4w0k.onrender.com';
+// Use environment variable for API URL, fallback to localhost for development
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const getAuthHeaders = (): HeadersInit => {
   const token = localStorage.getItem('token');
@@ -11,12 +12,12 @@ const handleResponse = async <T,>(response: Response): Promise<T> => {
   if (!response.ok) {
     if (response.status === 401) {
       localStorage.removeItem('token');
-      window.location.hash = ''; 
+      window.location.hash = '';
       throw new Error('Unauthorized');
     }
     const errorData = await response.json().catch(() => ({ detail: 'An unexpected error occurred' }));
-    const message = Array.isArray(errorData.detail) 
-      ? errorData.detail.map((e: any) => e.msg).join(', ') 
+    const message = Array.isArray(errorData.detail)
+      ? errorData.detail.map((e: any) => e.msg).join(', ')
       : errorData.detail || 'API Error';
     throw new Error(message);
   }
@@ -40,13 +41,18 @@ export const api = {
     return handleResponse<AuthResponse>(response);
   },
 
-  register: async (username: string, password: string): Promise<any> => {
-    const response = await fetch(`${BASE_URL}/users`, {
+  register: async (username: string, email: string, password: string): Promise<boolean> => {
+    // Backend expects query parameters, not JSON body
+    const params = new URLSearchParams({
+      username,
+      email,
+      password,
+    });
+    const response = await fetch(`${BASE_URL}/user?${params.toString()}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
     });
-    return handleResponse(response);
+    return handleResponse<boolean>(response);
   },
 
   // todo
@@ -82,10 +88,10 @@ export const api = {
       headers: getAuthHeaders(),
     });
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to delete');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Failed to delete');
     }
     // Consume response body as API returns JSON on success
-    await response.json().catch(() => {});
+    await response.json().catch(() => { });
   },
 };

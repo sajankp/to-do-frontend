@@ -11,6 +11,7 @@ interface AuthFormProps {
 export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,17 +27,17 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
         localStorage.setItem('token', response.access_token);
         onSuccess();
       } else {
-        await api.register(username, password);
+        await api.register(username, email, password);
         // Auto login after register or just switch mode
         // Let's try to auto login to be nice
         try {
-            const loginRes = await api.login(username, password);
-            localStorage.setItem('token', loginRes.access_token);
-            onSuccess();
+          const loginRes = await api.login(username, password);
+          localStorage.setItem('token', loginRes.access_token);
+          onSuccess();
         } catch {
-             // If auto login fails, just switch to login view
-             setIsLogin(true);
-             setError('Registration successful! Please log in.');
+          // If auto login fails, just switch to login view
+          setIsLogin(true);
+          setError('Registration successful! Please log in.');
         }
       }
     } catch (err: any) {
@@ -76,6 +77,16 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           required
           placeholder="Enter your username"
         />
+        {!isLogin && (
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="Enter your email"
+          />
+        )}
         <Input
           label="Password"
           type="password"
