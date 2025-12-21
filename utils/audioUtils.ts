@@ -24,7 +24,7 @@ export async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
   sampleRate: number,
-  numChannels: number,
+  numChannels: number
 ): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;

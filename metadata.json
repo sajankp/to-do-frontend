@@ -1,7 +1,5 @@
 {
   "name": "Todo App",
   "description": "A clean, efficient interface for the Render Todo API featuring authentication and full task management.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
+  "requestFramePermissions": ["microphone"]
 }

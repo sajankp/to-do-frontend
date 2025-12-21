@@ -57,7 +57,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           {isLogin ? 'Welcome back' : 'Create an account'}
         </h1>
         <p className="text-sm text-slate-500">
-          {isLogin ? 'Enter your credentials to access your todos' : 'Sign up to start organizing your tasks'}
+          {isLogin
+            ? 'Enter your credentials to access your todos'
+            : 'Sign up to start organizing your tasks'}
         </p>
       </div>
 

@@ -1,0 +1,60 @@
+# Pre-commit hooks configuration for frontend
+# See https://pre-commit.com for more information
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+# Bypass: git commit --no-verify
+
+# PHASE 1: Foundation (TD-007)
+# - Prettier for formatting
+# - Conventional commits
+# - General file checks
+# Phase 2 will add ESLint (TD-007a)
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix end of files
+      - id: check-yaml
+        name: Check YAML syntax
+      - id: check-added-large-files
+        name: Check for large files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: check-json
+        name: Check JSON syntax
+      - id: mixed-line-ending
+        name: Fix mixed line endings
+
+  # Prettier formatting (Phase 1)
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        name: Prettier formatting
+        types_or: [javascript, jsx, ts, tsx, json, yaml, markdown]
+
+  # Conventional commits validation (Phase 1)
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        name: Conventional commit message
+        stages: [commit-msg]
+        args:
+          - feat
+          - fix
+          - docs
+          - style
+          - refactor
+          - test
+          - chore
+          - perf
+          - ci
+          - build
+          - revert
