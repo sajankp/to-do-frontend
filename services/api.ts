@@ -46,15 +46,10 @@ export const api = {
   },
 
   register: async (username: string, email: string, password: string): Promise<boolean> => {
-    // Backend expects query parameters, not JSON body
-    const params = new URLSearchParams({
-      username,
-      email,
-      password,
-    });
-    const response = await fetch(`${BASE_URL}/user?${params.toString()}`, {
+    const response = await fetch(`${BASE_URL}/user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password }),
     });
     return handleResponse<boolean>(response);
   },
