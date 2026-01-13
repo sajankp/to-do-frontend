@@ -1,6 +1,6 @@
 # Frontend Agent Rules
 
-See [`AGENTS.md`](https://github.com/sajankp/to-do/blob/main/AGENTS.md) and [development workflows](https://github.com/sajankp/to-do/tree/main/.agent/workflows) for full development workflows.
+See the backend repository's [`AGENTS.md`](https://github.com/sajankp/to-do/blob/main/AGENTS.md) and [development workflows](https://github.com/sajankp/to-do/tree/main/.agent/workflows) for full development workflows.
 
 ## Frontend-Specific Notes
 
