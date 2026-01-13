@@ -21,6 +21,12 @@ npm run dev
 The app will be available at `http://localhost:5173`
 
 > **Note:** Requires the [FastTodo backend](https://github.com/sajankp/to-do) running locally or deployed.
+>
+> By default, the frontend connects to `http://localhost:8000`. To use a different backend URL, create a `.env` file:
+>
+> ```
+> VITE_API_URL=http://your-backend-url
+> ```
 
 ---
 
