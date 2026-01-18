@@ -170,7 +170,7 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary-600">
             <LayoutList className="w-6 h-6" />
-            <h1 className="text-xl font-bold text-slate-900">Render Todo</h1>
+            <h1 className="text-xl font-bold text-slate-900">Todo</h1>
           </div>
           <Button variant="ghost" onClick={onLogout} className="text-slate-600">
             <LogOut className="w-4 h-4 mr-2" />
