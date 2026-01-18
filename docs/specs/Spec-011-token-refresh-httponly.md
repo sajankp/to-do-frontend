@@ -26,8 +26,25 @@ When access tokens expire, users are logged out. This spec implements automatic 
 
 - Remove `localStorage` token handling
 - Add `credentials: 'include'` to all fetch calls
-- Add retry logic: on 401, call `/token/refresh`, retry original request
-- Show toast on successful refresh
+- Add retry logic with the following behavior:
+  - On 401, call `POST /token/refresh`
+  - If refresh succeeds: retry original request, show toast "Session extended"
+  - If refresh fails (401): clear auth state, redirect to login
+- **Concurrent request handling:** Use a refresh mutex/promise to ensure only one refresh request is in flight. Other failed requests wait for the single refresh result before retrying.
+
+```typescript
+// Pseudocode for concurrent refresh handling
+let refreshPromise: Promise<boolean> | null = null;
+
+async function refreshToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise; // Wait for existing refresh
+
+  refreshPromise = doRefresh().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+```
 
 ### 2. Types (`types.ts`)
 
@@ -49,8 +66,8 @@ export interface AuthResponse {
 ### 4. App Component (`App.tsx`)
 
 - Remove `localStorage.getItem('token')` check
-- Verify session via API call on mount
-- Logout calls `/auth/logout` endpoint
+- Verify session on mount by calling `GET /auth/me` (returns user info if session valid, 401 if not)
+- Logout calls `POST /auth/logout` endpoint (POST method for CSRF protection)
 
 ### 5. New Components
 
@@ -58,12 +75,60 @@ export interface AuthResponse {
 
 ---
 
+## Security Considerations
+
+### Why HttpOnly Cookies?
+
+HttpOnly cookies cannot be accessed by JavaScript, making authentication tokens immune to XSS theft attacks. Even if malicious scripts are injected, they cannot read or exfiltrate the tokens.
+
+### Cookie Attributes (set by backend)
+
+| Attribute    | Value         | Purpose                             |
+| ------------ | ------------- | ----------------------------------- |
+| **HttpOnly** | `true`        | Prevents JavaScript access          |
+| **Secure**   | `true` (prod) | HTTPS-only transmission             |
+| **SameSite** | `Lax`         | CSRF protection for POST/PUT/DELETE |
+
+### Logout Security
+
+The `/auth/logout` endpoint uses `POST` method to prevent CSRF attacks. A `GET` logout could be exploited by embedding `<img src="/auth/logout">` on external sites.
+
+### Credential Mode
+
+Using `credentials: 'include'` ensures cookies are sent with all requests, including cross-origin requests to the API.
+
+---
+
 ## Verification Plan
 
 > **Note:** Manual testing required (TD-010 pending).
 
-1. **Login with Remember me ON:** Both cookies set
-2. **Login with Remember me OFF:** Only access_token cookie
-3. **Token refresh:** Toast appears, action completes
-4. **Logout:** Both cookies cleared
-5. **No refresh cookie:** Session ends without retry
+### Cookie Attribute Checks
+
+1. **Login with Remember me ON:**
+
+   - Both `access_token` and `refresh_token` cookies present
+   - `refresh_token` has long `Max-Age` (e.g., 7 days)
+   - `access_token` has short `Max-Age` (e.g., 30 min)
+   - Both cookies have `HttpOnly` and `Secure` flags
+
+2. **Login with Remember me OFF:**
+
+   - Both cookies are session cookies (no `Max-Age`)
+   - Cookies cleared when browser closes
+
+3. **Token refresh:**
+
+   - Session extended silently
+   - Toast appears with "Session extended"
+   - Action completes successfully
+
+4. **Logout:**
+
+   - `POST /auth/logout` called
+   - Both cookies cleared (`Max-Age=0`)
+   - User redirected to login
+
+5. **No refresh cookie (expired/cleared):**
+   - Session ends on next 401
+   - User redirected to login without retry loop
