@@ -79,23 +79,37 @@ export interface AuthResponse {
 
 ### Why HttpOnly Cookies?
 
-HttpOnly cookies cannot be accessed by JavaScript, making authentication tokens immune to XSS theft attacks. Even if malicious scripts are injected, they cannot read or exfiltrate the tokens.
+HttpOnly cookies cannot be accessed by JavaScript, making authentication tokens immune to XSS theft attacks.
+
+### Cross-Origin Deployment
+
+> [!IMPORTANT]
+> Frontend (GitHub Pages) and backend (Render) are on **different domains**.
+> This requires `SameSite=None` cookies and `credentials: 'include'` on all requests.
 
 ### Cookie Attributes (set by backend)
 
-| Attribute    | Value         | Purpose                             |
-| ------------ | ------------- | ----------------------------------- |
-| **HttpOnly** | `true`        | Prevents JavaScript access          |
-| **Secure**   | `true` (prod) | HTTPS-only transmission             |
-| **SameSite** | `Lax`         | CSRF protection for POST/PUT/DELETE |
+| Attribute    | Value  | Purpose                                       |
+| ------------ | ------ | --------------------------------------------- |
+| **HttpOnly** | `true` | Prevents JavaScript access                    |
+| **Secure**   | `true` | HTTPS-only (required with SameSite=None)      |
+| **SameSite** | `None` | Required for cross-origin cookie transmission |
 
-### Logout Security
+### CSRF Protection
 
-The `/auth/logout` endpoint uses `POST` method to prevent CSRF attacks. A `GET` logout could be exploited by embedding `<img src="/auth/logout">` on external sites.
+With `SameSite=None`, automatic CSRF protection is reduced. Mitigations:
+
+1. **Backend CORS:** Only allows `https://sajankp.github.io`
+2. **State-changing endpoints:** All use POST/PUT/DELETE (not GET)
+3. **Logout:** Uses POST to prevent `<img src>` attacks
 
 ### Credential Mode
 
-Using `credentials: 'include'` ensures cookies are sent with all requests, including cross-origin requests to the API.
+Using `credentials: 'include'` is **mandatory** for cross-origin cookies:
+
+```typescript
+fetch(url, { credentials: 'include', ... })
+```
 
 ---
 
@@ -110,7 +124,7 @@ Using `credentials: 'include'` ensures cookies are sent with all requests, inclu
    - Both `access_token` and `refresh_token` cookies present
    - `refresh_token` has long `Max-Age` (e.g., 7 days)
    - `access_token` has short `Max-Age` (e.g., 30 min)
-   - Both cookies have `HttpOnly` and `Secure` flags
+   - Both cookies have `HttpOnly`, `Secure`, and `SameSite=None` flags
 
 2. **Login with Remember me OFF:**
 
@@ -130,5 +144,11 @@ Using `credentials: 'include'` ensures cookies are sent with all requests, inclu
    - User redirected to login
 
 5. **No refresh cookie (expired/cleared):**
+
    - Session ends on next 401
    - User redirected to login without retry loop
+
+6. **Cross-origin verification:**
+   - Open DevTools Network tab
+   - Confirm cookies sent on API requests to Render domain
+   - Confirm CORS headers present in responses
