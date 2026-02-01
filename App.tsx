@@ -37,7 +37,9 @@ function App() {
       {!isAuthenticated ? (
         <div className="min-h-screen flex flex-col items-center justify-center p-4">
           <AuthForm onSuccess={handleLoginSuccess} />
-          <p className="mt-8 text-xs text-slate-400">Powered by Render Todo API</p>
+          <p className="mt-8 text-xs text-slate-400">{`Powered by ${
+            import.meta.env.VITE_API_NAME || 'Todo API'
+          }`}</p>
         </div>
       ) : (
         <TodoList onLogout={handleLogout} />
