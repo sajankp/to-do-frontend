@@ -14,7 +14,9 @@ vi.mock('./services/api', () => ({
     deleteTodo: vi.fn(),
     login: vi.fn(),
     onUnauthorized: vi.fn(() => vi.fn()), // Return a mock unsubscribe function
+    onSessionExtended: vi.fn(() => vi.fn()),
     notifyUnauthorized: vi.fn(),
+    notifySessionExtended: vi.fn(),
   },
 }));
 
@@ -22,6 +24,7 @@ describe('App Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(api.onUnauthorized).mockImplementation(() => vi.fn());
+    vi.mocked(api.onSessionExtended).mockImplementation(() => vi.fn());
   });
 
   it('should check session on mount', async () => {

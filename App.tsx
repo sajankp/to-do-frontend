@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { AuthForm } from './components/AuthForm';
 import { api } from './services/api';
 import { TodoList } from './components/TodoList';
+import { Toast } from './components/Toast';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [initializing, setInitializing] = useState(true);
+  const [showSessionExtendedToast, setShowSessionExtendedToast] = useState(false);
 
   useEffect(() => {
     // Check for existing session via API (cookies)
@@ -22,12 +24,18 @@ function App() {
     checkSession();
 
     // Subscribe to auth failures (e.g. token expired and refresh failed)
-    const unsubscribe = api.onUnauthorized(() => {
+    const unsubscribeUnauthorized = api.onUnauthorized(() => {
       setIsAuthenticated(false);
     });
 
+    // Subscribe to session extension notifications
+    const unsubscribeSessionExtended = api.onSessionExtended(() => {
+      setShowSessionExtendedToast(true);
+    });
+
     return () => {
-      unsubscribe();
+      unsubscribeUnauthorized();
+      unsubscribeSessionExtended();
     };
   }, []);
 
@@ -64,6 +72,9 @@ function App() {
         </div>
       ) : (
         <TodoList onLogout={handleLogout} />
+      )}
+      {showSessionExtendedToast && (
+        <Toast message="Session extended" onClose={() => setShowSessionExtendedToast(false)} />
       )}
     </div>
   );

@@ -4,8 +4,9 @@ import { AuthResponse, Todo, User } from '../types';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 let refreshPromise: Promise<void> | null = null;
-type UnauthorizedCallback = () => void;
-const unauthorizedCallbacks: UnauthorizedCallback[] = [];
+type EventCallback = () => void;
+const unauthorizedCallbacks: EventCallback[] = [];
+const sessionExtendedCallbacks: EventCallback[] = [];
 
 /**
  * Centralized fetch wrapper (Middleware)
@@ -54,6 +55,8 @@ const fetchClient = async (endpoint: string, options: RequestInit = {}): Promise
             }
             throw new Error('Refresh failed');
           }
+          // Notify that session was successfully extended
+          api.notifySessionExtended();
         } catch (error) {
           // The `notifyUnauthorized` call is handled within the `try` block for specific
           // status codes (401/403). For any other error during refresh (e.g., network error),
@@ -95,12 +98,18 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
       : errorData.detail || 'API Error';
     throw new Error(message);
   }
+
+  // Handle 204 No Content (common for DELETE)
+  if (response.status === 204) {
+    return undefined as any;
+  }
+
   return response.json();
 };
 
 export const api = {
   // Auth Observer
-  onUnauthorized: (callback: UnauthorizedCallback) => {
+  onUnauthorized: (callback: EventCallback) => {
     unauthorizedCallbacks.push(callback);
     return () => {
       const index = unauthorizedCallbacks.indexOf(callback);
@@ -112,6 +121,20 @@ export const api = {
 
   notifyUnauthorized: () => {
     unauthorizedCallbacks.forEach((cb) => cb());
+  },
+
+  onSessionExtended: (callback: EventCallback) => {
+    sessionExtendedCallbacks.push(callback);
+    return () => {
+      const index = sessionExtendedCallbacks.indexOf(callback);
+      if (index > -1) {
+        sessionExtendedCallbacks.splice(index, 1);
+      }
+    };
+  },
+
+  notifySessionExtended: () => {
+    sessionExtendedCallbacks.forEach((cb) => cb());
   },
 
   // Auth
@@ -198,9 +221,7 @@ export const api = {
     const response = await fetchClient(`/todo/${id}`, {
       method: 'DELETE',
     });
-    if (!response.ok) {
-      // reuse handleResponse logic for error parsing
-      await handleResponse(response);
-    }
+    // Use handleResponse to parse errors or consume body on success
+    return handleResponse<void>(response);
   },
 };
