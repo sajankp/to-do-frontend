@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthForm } from './components/AuthForm';
+import { api } from './services/api';
 import { TodoList } from './components/TodoList';
 
 function App() {
@@ -7,21 +8,32 @@ function App() {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    // Check for existing token on mount
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
-    }
-    setInitializing(false);
+    // Check for existing session via API (cookies)
+    const checkSession = async () => {
+      try {
+        await api.getCurrentUser();
+        setIsAuthenticated(true);
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setInitializing(false);
+      }
+    };
+    checkSession();
   }, []);
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch (error) {
+      console.error('Logout failed', error);
+    } finally {
+      setIsAuthenticated(false);
+    }
   };
 
   if (initializing) {

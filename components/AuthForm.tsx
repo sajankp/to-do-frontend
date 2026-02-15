@@ -13,6 +13,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true); // Default to true
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,16 +24,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
 
     try {
       if (isLogin) {
-        const response = await api.login(username, password);
-        localStorage.setItem('token', response.access_token);
+        await api.login(username, password, rememberMe);
+        // localStorage.setItem('token', ...) REMOVED - using cookies
         onSuccess();
       } else {
         await api.register(username, email, password);
-        // Auto login after register or just switch mode
-        // Let's try to auto login to be nice
+        // Auto login after register
         try {
-          const loginRes = await api.login(username, password);
-          localStorage.setItem('token', loginRes.access_token);
+          await api.login(username, password, true); // Default true for auto-login
           onSuccess();
         } catch {
           // If auto login fails, just switch to login view
@@ -97,6 +96,22 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           required
           placeholder="Enter your password"
         />
+
+        {isLogin && (
+          <div className="flex items-center">
+            <input
+              id="remember-me"
+              name="remember-me"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600"
+            />
+            <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900">
+              Remember me
+            </label>
+          </div>
+        )}
 
         <Button type="submit" className="w-full" size="lg" isLoading={loading}>
           {isLogin ? 'Sign in' : 'Create account'}
