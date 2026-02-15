@@ -1,4 +1,4 @@
-import { AuthResponse, Todo } from '../types';
+import { AuthResponse, Todo, User } from '../types';
 
 // Use environment variable for API URL, fallback to localhost for development
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -48,11 +48,20 @@ const fetchClient = async (endpoint: string, options: RequestInit = {}): Promise
           });
 
           if (!refreshResponse.ok) {
+            // Only notify unauthorized for auth failures (401/403)
+            if (refreshResponse.status === 401 || refreshResponse.status === 403) {
+              api.notifyUnauthorized();
+            }
             throw new Error('Refresh failed');
           }
         } catch (error) {
-          // If refresh fails, notify listeners (UI should handle redirect)
-          api.notifyUnauthorized();
+          // Only notify unauthorized for auth-related errors
+          // Network errors or 5xx errors should not force logout
+          if (error instanceof Error && error.message === 'Refresh failed') {
+            // Already handled above based on status code
+          } else {
+            // Network error - don't force logout, let the request fail naturally
+          }
           throw error;
         } finally {
           refreshPromise = null;
@@ -154,7 +163,7 @@ export const api = {
     }
   },
 
-  getCurrentUser: async (): Promise<any> => {
+  getCurrentUser: async (): Promise<User> => {
     const response = await fetchClient('/user/me');
     return handleResponse(response);
   },
