@@ -41,6 +41,9 @@ const fetchClient = async (endpoint: string, options: RequestInit = {}): Promise
           // We use 'include' to send the refresh_token cookie
           const refreshResponse = await fetch(`${BASE_URL}/token/refresh`, {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
             credentials: 'include',
           });
 
