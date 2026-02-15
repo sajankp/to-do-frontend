@@ -16,8 +16,9 @@ export interface Todo {
 }
 
 export interface AuthResponse {
-  access_token: string;
+  message: string;
   token_type: string;
+  user?: User; // Optional user object if backend returns it
 }
 
 export interface ApiError {
