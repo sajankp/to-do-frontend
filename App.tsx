@@ -20,6 +20,15 @@ function App() {
       }
     };
     checkSession();
+
+    // Subscribe to auth failures (e.g. token expired and refresh failed)
+    const unsubscribe = api.onUnauthorized(() => {
+      setIsAuthenticated(false);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleLoginSuccess = () => {

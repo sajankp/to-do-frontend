@@ -13,12 +13,15 @@ vi.mock('./services/api', () => ({
     updateTodo: vi.fn(),
     deleteTodo: vi.fn(),
     login: vi.fn(),
+    onUnauthorized: vi.fn(() => vi.fn()), // Return a mock unsubscribe function
+    notifyUnauthorized: vi.fn(),
   },
 }));
 
 describe('App Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (api.onUnauthorized as any).mockImplementation(() => vi.fn());
   });
 
   it('should check session on mount', async () => {
@@ -36,15 +39,7 @@ describe('App Component', () => {
 
     render(<App />);
 
-    // Wait for initializing to finish
-    // TodoList usually has "My Tasks" or similar.
-    // Or we can check if AuthForm is NOT present.
-    // Let's assume TodoList renders something specific.
-    // We might need to inspect TodoList component to know what to look for.
-    // Or simply check that "Sign in" (AuthForm) is not present.
-
     await waitFor(() => expect(screen.queryByText(/Sign in/i)).not.toBeInTheDocument());
-    // And check if TodoList is rendered (mocking it might be better if it has complex children)
   });
 
   it('should show login screen if session check fails', async () => {
@@ -55,5 +50,11 @@ describe('App Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/Sign in/i)).toBeInTheDocument();
     });
+  });
+
+  it('should subscribe to onUnauthorized events', async () => {
+    (api.getCurrentUser as any).mockResolvedValue({ id: 1, username: 'testuser' });
+    render(<App />);
+    await waitFor(() => expect(api.onUnauthorized).toHaveBeenCalled());
   });
 });

@@ -3,8 +3,9 @@ import { AuthResponse, Todo } from '../types';
 // Use environment variable for API URL, fallback to localhost for development
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-let isRefreshing = false;
 let refreshPromise: Promise<void> | null = null;
+type UnauthorizedCallback = () => void;
+const unauthorizedCallbacks: UnauthorizedCallback[] = [];
 
 /**
  * Centralized fetch wrapper (Middleware)
@@ -34,7 +35,6 @@ const fetchClient = async (endpoint: string, options: RequestInit = {}): Promise
     }
 
     if (!refreshPromise) {
-      isRefreshing = true;
       refreshPromise = (async () => {
         try {
           // Call refresh endpoint directly (bypass wrapper to avoid recursion loop check issues)
@@ -48,13 +48,10 @@ const fetchClient = async (endpoint: string, options: RequestInit = {}): Promise
             throw new Error('Refresh failed');
           }
         } catch (error) {
-          // If refresh fails, logout and throw
-          isRefreshing = false;
-          // Clear any local state if needed (though cookies are cleared by backend/browser)
-          window.location.hash = ''; // Redirect to login (App.tsx checks this or session)
+          // If refresh fails, notify listeners (UI should handle redirect)
+          api.notifyUnauthorized();
           throw error;
         } finally {
-          isRefreshing = false;
           refreshPromise = null;
         }
       })();
@@ -93,6 +90,21 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
 };
 
 export const api = {
+  // Auth Observer
+  onUnauthorized: (callback: UnauthorizedCallback) => {
+    unauthorizedCallbacks.push(callback);
+    return () => {
+      const index = unauthorizedCallbacks.indexOf(callback);
+      if (index > -1) {
+        unauthorizedCallbacks.splice(index, 1);
+      }
+    };
+  },
+
+  notifyUnauthorized: () => {
+    unauthorizedCallbacks.forEach((cb) => cb());
+  },
+
   // Auth
   login: async (
     username: string,
@@ -103,21 +115,10 @@ export const api = {
     formData.append('username', username);
     formData.append('password', password);
     // Add remember_me if backend supports it (Spec-015 says it does)
-    // Note: URLSearchParams converts boolean to string 'true'/'false'
-    // But backend might expect it in the body or query? Spec says "Accept remember_me parameter"
-    // Usually OAuth2 forms are strict. Let's check spec.
-    // Spec says: "Accept remember_me parameter to control refresh token storage"
-    // It's likely a query param or form field. Let's assume form field for now if it's x-www-form-urlencoded.
-    // If it was a query param: `${BASE_URL}/token?remember_me=${rememberMe}`
-    // Let's add it to formData just in case.
     if (rememberMe) {
       formData.append('remember_me', 'true');
     }
 
-    // Login uses fetch directly or fetchClient?
-    // Login shouldn't need a token, but it sets cookies.
-    // We can use fetchClient, but simpler to just use fetch since we don't need 401 interception on login itself.
-    // Actually, we DO want credentials: include (maybe? no, login sets them).
     // Spec says: "Set HttpOnly cookies instead of returning tokens in body"
     const response = await fetch(`${BASE_URL}/token`, {
       method: 'POST',
@@ -140,12 +141,14 @@ export const api = {
   },
 
   logout: async (): Promise<void> => {
-    // New logout endpoint
-    await fetchClient('/auth/logout', {
-      method: 'POST',
-    });
-    window.location.hash = '';
-    window.location.reload(); // Ensure clean state
+    try {
+      await fetchClient('/auth/logout', {
+        method: 'POST',
+      });
+    } finally {
+      // Always notify UI to clear state
+      api.notifyUnauthorized();
+    }
   },
 
   getCurrentUser: async (): Promise<any> => {

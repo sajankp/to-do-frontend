@@ -9,7 +9,8 @@ describe('API Service', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     localStorage.clear();
-    // Reset window.location mock
+    // Reset window.location mock (still needed if any legacy code touched it, but we removed it)
+    // Minimally mock it just in case
     Object.defineProperty(window, 'location', {
       writable: true,
       value: { hash: '', reload: vi.fn(), href: '' },
@@ -42,12 +43,6 @@ describe('API Service', () => {
       })
     );
 
-    // Simulate "logged in" state if logic still depended on it, but we are moving away from it.
-    // For now, just ensure the header isn't added even if we haven't touched the code yet (TDD).
-    // The existing code *does* add it if localStorage has a token.
-    // We will ensure our new code *doesn't*.
-    localStorage.setItem('token', 'fake-token');
-
     await api.getTodos();
 
     expect(capturedHeaders?.get('Authorization')).toBeNull();
@@ -67,7 +62,6 @@ describe('API Service', () => {
       }),
       http.post(`${BASE_URL}/token/refresh`, () => {
         refreshCallCount++;
-        // Refresh usually sets a cookie, but for client-side logic, successful 200 is enough
         return HttpResponse.json({ message: 'Refreshed' });
       })
     );
@@ -79,7 +73,7 @@ describe('API Service', () => {
     expect(todos).toHaveLength(1);
   });
 
-  it('should logout and redirect if refresh fails', async () => {
+  it('should notify unauthorized observers if refresh fails', async () => {
     server.use(
       http.get(`${BASE_URL}/todo`, () => {
         return new HttpResponse(null, { status: 401 });
@@ -89,42 +83,18 @@ describe('API Service', () => {
       })
     );
 
+    const onUnauthorizedSpy = vi.fn();
+    api.onUnauthorized(onUnauthorizedSpy);
+
     await expect(api.getTodos()).rejects.toThrow('Unauthorized');
-    expect(window.location.hash).toBe(''); // Or logic for redirect
-    // Since we are mocking window.location, we should check if we cleared state.
-    // Ideally we check if it redirects or dispatches an event.
-    // Existing logic clears localStorage and resets hash.
+
+    expect(onUnauthorizedSpy).toHaveBeenCalled();
+    // Ensure we don't reload page
+    expect(window.location.reload).not.toHaveBeenCalled();
   });
 
   it('should coalesce multiple concurrent 401s into a single refresh', async () => {
     let refreshCallCount = 0;
-
-    // Delay the refresh slightly to ensure concurrency overlaps
-    server.use(
-      http.get(`${BASE_URL}/todo`, () => {
-        return new HttpResponse(null, { status: 401 });
-      }),
-      http.patch(`${BASE_URL}/todo/1`, () => {
-        return new HttpResponse(null, { status: 401 });
-      }),
-      http.post(`${BASE_URL}/token/refresh`, async () => {
-        refreshCallCount++;
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        return HttpResponse.json({ message: 'Refreshed' });
-      })
-    );
-
-    // We expect these promises to fail or succeed depending on logic,
-    // but the key is only ONE refresh call.
-    // Note: If they succeed, we need handlers for the retries.
-    // Let's add handlers for retries:
-    server.use(
-      http.get(`${BASE_URL}/todo`, () => HttpResponse.json([])),
-      http.patch(`${BASE_URL}/todo/1`, () => HttpResponse.json({}))
-    );
-    // MSW "once" handlers are tricky with override.
-    // Better strategy: Use a counter in a single handler.
-
     let todoCalls = 0;
     let patchCalls = 0;
 
