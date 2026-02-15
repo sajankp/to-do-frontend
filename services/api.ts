@@ -55,13 +55,10 @@ const fetchClient = async (endpoint: string, options: RequestInit = {}): Promise
             throw new Error('Refresh failed');
           }
         } catch (error) {
-          // Only notify unauthorized for auth-related errors
-          // Network errors or 5xx errors should not force logout
-          if (error instanceof Error && error.message === 'Refresh failed') {
-            // Already handled above based on status code
-          } else {
-            // Network error - don't force logout, let the request fail naturally
-          }
+          // The `notifyUnauthorized` call is handled within the `try` block for specific
+          // status codes (401/403). For any other error during refresh (e.g., network error),
+          // we just re-throw to let the original request fail naturally without
+          // forcing a global logout.
           throw error;
         } finally {
           refreshPromise = null;
