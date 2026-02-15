@@ -21,11 +21,11 @@ vi.mock('./services/api', () => ({
 describe('App Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (api.onUnauthorized as any).mockImplementation(() => vi.fn());
+    vi.mocked(api.onUnauthorized).mockImplementation(() => vi.fn());
   });
 
   it('should check session on mount', async () => {
-    (api.getCurrentUser as any).mockResolvedValue({ id: 1, username: 'testuser' });
+    vi.mocked(api.getCurrentUser).mockResolvedValue({ id: 1, username: 'testuser' });
 
     render(<App />);
 
@@ -35,7 +35,7 @@ describe('App Component', () => {
   });
 
   it('should show todo list if session valid', async () => {
-    (api.getCurrentUser as any).mockResolvedValue({ id: 1, username: 'testuser' });
+    vi.mocked(api.getCurrentUser).mockResolvedValue({ id: 1, username: 'testuser' });
 
     render(<App />);
 
@@ -43,7 +43,7 @@ describe('App Component', () => {
   });
 
   it('should show login screen if session check fails', async () => {
-    (api.getCurrentUser as any).mockRejectedValue(new Error('Unauthorized'));
+    vi.mocked(api.getCurrentUser).mockRejectedValue(new Error('Unauthorized'));
 
     render(<App />);
 
@@ -53,7 +53,7 @@ describe('App Component', () => {
   });
 
   it('should subscribe to onUnauthorized events', async () => {
-    (api.getCurrentUser as any).mockResolvedValue({ id: 1, username: 'testuser' });
+    vi.mocked(api.getCurrentUser).mockResolvedValue({ id: 1, username: 'testuser' });
     render(<App />);
     await waitFor(() => expect(api.onUnauthorized).toHaveBeenCalled());
   });
