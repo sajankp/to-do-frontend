@@ -189,8 +189,12 @@ export const api = {
   },
 
   // todo
-  getTodos: async (): Promise<Todo[]> => {
-    const response = await fetchClient('/todo', {
+  getTodos: async (completed?: boolean): Promise<Todo[]> => {
+    const params = new URLSearchParams();
+    if (completed !== undefined) {
+      params.append('completed', completed.toString());
+    }
+    const response = await fetchClient(`/todo?${params.toString()}`, {
       method: 'GET',
     });
     return handleResponse<Todo[]>(response);

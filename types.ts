@@ -10,6 +10,7 @@ export interface Todo {
   description: string;
   due_date: string;
   priority: 'low' | 'medium' | 'high';
+  completed: boolean;
   created_at?: string;
   updated_at?: string;
   user_id?: string;
