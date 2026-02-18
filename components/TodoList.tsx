@@ -13,7 +13,6 @@ import {
   LogOut,
   LayoutList,
   Calendar,
-  Flag,
   AlertTriangle,
   CheckCircle2,
   Circle,
@@ -56,6 +55,8 @@ const PriorityBadge = ({ priority }: { priority: string }) => {
     </span>
   );
 };
+
+const FILTERS = ['all', 'active', 'completed'] as const;
 
 export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -138,21 +139,24 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
   };
 
   const toggleCompletion = async (todo: Todo) => {
-    try {
-      // Optimistic update
-      const updatedMock = { ...todo, completed: !todo.completed };
-      setTodos((prev) => prev.map((t) => (t.id === todo.id ? updatedMock : t)));
+    // Store original state for revert
+    const originalTodos = todos;
 
+    // Optimistic update
+    const updatedMock = { ...todo, completed: !todo.completed };
+    setTodos((prev) => prev.map((t) => (t.id === todo.id ? updatedMock : t)));
+
+    try {
       await api.updateTodo(todo.id, { completed: !todo.completed });
 
-      // If we are filtering by status, the item might need to be removed from view
+      // If we are filtering by status, remove the item from view instead of refetching
       if (filter !== 'all') {
-        fetchTodos();
+        setTodos((prev) => prev.filter((t) => t.id !== todo.id));
       }
     } catch (error) {
       // Revert on failure
       console.error('Failed to toggle completion', error);
-      fetchTodos();
+      setTodos(originalTodos);
     }
   };
 
@@ -221,7 +225,7 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
           </div>
 
           <div className="flex bg-slate-100 p-1 rounded-lg">
-            {(['all', 'active', 'completed'] as const).map((f) => (
+            {FILTERS.map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
