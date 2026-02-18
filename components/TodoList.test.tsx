@@ -89,7 +89,6 @@ describe('TodoList Component', () => {
     await waitFor(() => expect(screen.getByText('Test Todo 1')).toBeInTheDocument());
 
     const todo1 = mockTodos[0];
-    const toggleButton = screen.getAllByRole('button')[3]; // Adjust index based on rendered buttons or use more specific selector if possible
 
     // Mock API success but delay it to verify optimistic update
     vi.mocked(api.updateTodo).mockImplementation(async () => {
@@ -97,27 +96,7 @@ describe('TodoList Component', () => {
       return { ...todo1, completed: true };
     });
 
-    // Find the toggle button (circle icon) for the first todo
-    // Using a more robust selector would be better, but for now assuming order or aria-labels if added
-    // The component uses lucide-react icons which might not have accessible names by default.
-    // Let's try to find by the SVG content or parent button logic.
-    // Actually, looking at the code:
-    // <button onClick={() => toggleCompletion(todo)} ...>
-    //   {todo.completed ? <CheckCircle2 /> : <Circle />}
-    // </button>
-
-    // We can just query by the parent div structure or text content if we can rely on it.
-    // Since we know 'Test Todo 1' is uncompleted, we look for its container and find the button.
-
-    // Validating specific state change:
-    // Before click: Circle icon (incomplete)
-    // After click: CheckCircle2 icon (complete) immediately
-
-    // Ideally we'd add aria-labels to the buttons in the component for better testing and accessibility.
-    // For now, let's trigger the click on the button associated with 'Test Todo 1' using a test id or relative lookup?
-    // Or just click the first toggle button found.
-
-    // Let's find the item by text, then find the button within it.
+    // Find the toggle button within the todo item
     const todoItem = screen.getByText('Test Todo 1').closest('.group');
     const toggleBtn = todoItem?.querySelector('button');
 

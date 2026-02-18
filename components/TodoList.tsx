@@ -139,9 +139,6 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
   };
 
   const toggleCompletion = async (todo: Todo) => {
-    // Store original state for revert
-    const originalTodos = todos;
-
     // Optimistic update
     const updatedMock = { ...todo, completed: !todo.completed };
     setTodos((prev) => prev.map((t) => (t.id === todo.id ? updatedMock : t)));
@@ -154,9 +151,9 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
         setTodos((prev) => prev.filter((t) => t.id !== todo.id));
       }
     } catch (error) {
-      // Revert on failure
+      // Revert on failure - only revert the specific item to avoid overwriting other changes
       console.error('Failed to toggle completion', error);
-      setTodos(originalTodos);
+      setTodos((prev) => prev.map((t) => (t.id === todo.id ? todo : t)));
     }
   };
 
