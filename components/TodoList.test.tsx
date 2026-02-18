@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { TodoList } from './TodoList';
 import { api } from '../services/api';
 import { Todo } from '../types';
@@ -14,6 +14,8 @@ vi.mock('../services/api', () => ({
   },
 }));
 
+const MOCK_DATE = '2023-01-01T12:00:00.000Z';
+
 const mockTodos: Todo[] = [
   {
     id: '1',
@@ -21,9 +23,9 @@ const mockTodos: Todo[] = [
     description: 'Description 1',
     completed: false,
     priority: 'medium',
-    due_date: new Date().toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    due_date: MOCK_DATE,
+    created_at: MOCK_DATE,
+    updated_at: MOCK_DATE,
     user_id: '1',
   },
   {
@@ -32,9 +34,9 @@ const mockTodos: Todo[] = [
     description: 'Description 2',
     completed: true,
     priority: 'high',
-    due_date: new Date().toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    due_date: MOCK_DATE,
+    created_at: MOCK_DATE,
+    updated_at: MOCK_DATE,
     user_id: '1',
   },
 ];
@@ -97,11 +99,17 @@ describe('TodoList Component', () => {
     });
 
     // Find the toggle button within the todo item
+
     const todoItem = screen.getByText('Test Todo 1').closest('.group');
-    const toggleBtn = todoItem?.querySelector('button');
+    expect(todoItem).toBeInTheDocument();
+
+    // Use getByRole with the new aria-label for robust selection
+    const toggleBtn = within(todoItem as HTMLElement).getByRole('button', {
+      name: /mark.*as complete/i,
+    });
 
     expect(toggleBtn).toBeInTheDocument();
-    if (toggleBtn) fireEvent.click(toggleBtn);
+    fireEvent.click(toggleBtn);
 
     // Expect immediate UI update (optimistic)
     // The todo text gets line-through class when completed
@@ -120,12 +128,15 @@ describe('TodoList Component', () => {
     await waitFor(() => expect(screen.getByText('Test Todo 1')).toBeInTheDocument());
 
     const todoItem = screen.getByText('Test Todo 1').closest('.group');
-    const toggleBtn = todoItem?.querySelector('button');
+    expect(todoItem).toBeInTheDocument();
+    const toggleBtn = within(todoItem as HTMLElement).getByRole('button', {
+      name: /mark.*as complete/i,
+    });
 
     // Mock API failure
     vi.mocked(api.updateTodo).mockRejectedValue(new Error('API Error'));
 
-    if (toggleBtn) fireEvent.click(toggleBtn);
+    fireEvent.click(toggleBtn);
 
     // Initially changes to completed (optimistic)
     await waitFor(() => {

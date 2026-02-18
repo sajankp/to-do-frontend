@@ -151,9 +151,9 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
         setTodos((prev) => prev.filter((t) => t.id !== todo.id));
       }
     } catch (error) {
-      // Revert on failure - only revert the specific item to avoid overwriting other changes
+      // Revert on failure by refetching to ensure consistent state
       console.error('Failed to toggle completion', error);
-      setTodos((prev) => prev.map((t) => (t.id === todo.id ? todo : t)));
+      fetchTodos();
     }
   };
 
@@ -270,6 +270,11 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
                 <div className="flex items-start justify-between gap-4">
                   <button
                     onClick={() => toggleCompletion(todo)}
+                    aria-label={
+                      todo.completed
+                        ? `Mark "${todo.title}" as incomplete`
+                        : `Mark "${todo.title}" as complete`
+                    }
                     className={`mt-1 flex-shrink-0 transition-colors ${
                       todo.completed ? 'text-primary-600' : 'text-slate-300 hover:text-primary-500'
                     }`}
