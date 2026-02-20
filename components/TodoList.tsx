@@ -151,9 +151,9 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
         setTodos((prev) => prev.filter((t) => t.id !== todo.id));
       }
     } catch (error) {
-      // Revert on failure by refetching to ensure consistent state
+      // Revert the optimistic update on failure
       console.error('Failed to toggle completion', error);
-      fetchTodos();
+      setTodos((prev) => prev.map((t) => (t.id === todo.id ? todo : t)));
     }
   };
 
