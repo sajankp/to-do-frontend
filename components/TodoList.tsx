@@ -13,8 +13,9 @@ import {
   LogOut,
   LayoutList,
   Calendar,
-  Flag,
   AlertTriangle,
+  CheckCircle2,
+  Circle,
 } from 'lucide-react';
 
 interface TodoListProps {
@@ -55,10 +56,13 @@ const PriorityBadge = ({ priority }: { priority: string }) => {
   );
 };
 
+const FILTERS = ['all', 'active', 'completed'] as const;
+
 export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
 
   // Modal State for Create/Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,7 +81,9 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
 
   const fetchTodos = async () => {
     try {
-      const data = await api.getTodos();
+      setLoading(true);
+      const completedParam = filter === 'all' ? undefined : filter === 'completed';
+      const data = await api.getTodos(completedParam);
       setTodos(data);
     } catch (error) {
       console.error('Failed to fetch todos', error);
@@ -88,7 +94,7 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
 
   useEffect(() => {
     fetchTodos();
-  }, []);
+  }, [filter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,6 +135,25 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
       console.error('Failed to delete', error);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const toggleCompletion = async (todo: Todo) => {
+    // Optimistic update
+    const updatedMock = { ...todo, completed: !todo.completed };
+    setTodos((prev) => prev.map((t) => (t.id === todo.id ? updatedMock : t)));
+
+    try {
+      await api.updateTodo(todo.id, { completed: !todo.completed });
+
+      // If we are filtering by status, remove the item from view instead of refetching
+      if (filter !== 'all') {
+        setTodos((prev) => prev.filter((t) => t.id !== todo.id));
+      }
+    } catch (error) {
+      // Revert the optimistic update on failure
+      console.error('Failed to toggle completion', error);
+      setTodos((prev) => prev.map((t) => (t.id === todo.id ? todo : t)));
     }
   };
 
@@ -195,6 +220,23 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
+
+          <div className="flex bg-slate-100 p-1 rounded-lg">
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  filter === f
+                    ? 'bg-white text-primary-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+
           <Button onClick={() => openModal()}>
             <Plus className="w-4 h-4 mr-2" />
             Add Task
@@ -219,16 +261,50 @@ export const TodoList: React.FC<TodoListProps> = ({ onLogout }) => {
             {filteredTodos.map((todo) => (
               <div
                 key={todo.id}
-                className="group bg-white p-4 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md hover:border-primary-200"
+                className={`group bg-white p-4 rounded-xl border transition-all hover:shadow-md ${
+                  todo.completed
+                    ? 'border-primary-100 bg-slate-50'
+                    : 'border-slate-200 hover:border-primary-200'
+                }`}
               >
                 <div className="flex items-start justify-between gap-4">
+                  <button
+                    onClick={() => toggleCompletion(todo)}
+                    aria-label={
+                      todo.completed
+                        ? `Mark "${todo.title}" as incomplete`
+                        : `Mark "${todo.title}" as complete`
+                    }
+                    className={`mt-1 flex-shrink-0 transition-colors ${
+                      todo.completed ? 'text-primary-600' : 'text-slate-300 hover:text-primary-500'
+                    }`}
+                  >
+                    {todo.completed ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <Circle className="w-5 h-5" />
+                    )}
+                  </button>
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-slate-900 truncate">{todo.title}</h3>
+                      <h3
+                        className={`font-medium truncate transition-all ${
+                          todo.completed ? 'text-slate-400 line-through' : 'text-slate-900'
+                        }`}
+                      >
+                        {todo.title}
+                      </h3>
                       <PriorityBadge priority={todo.priority} />
                     </div>
                     {todo.description && (
-                      <p className="text-sm text-slate-500 mb-3 line-clamp-2">{todo.description}</p>
+                      <p
+                        className={`text-sm mb-3 line-clamp-2 ${
+                          todo.completed ? 'text-slate-400' : 'text-slate-500'
+                        }`}
+                      >
+                        {todo.description}
+                      </p>
                     )}
 
                     <div className="flex items-center gap-2 text-xs text-slate-400">
