@@ -21,7 +21,7 @@ describe('API Service', () => {
     let capturedRequest: Request | undefined;
 
     server.use(
-      http.get(`${BASE_URL}/todo`, ({ request }) => {
+      http.get(`${BASE_URL}/todo/`, ({ request }) => {
         capturedRequest = request;
         return HttpResponse.json([]);
       })
@@ -37,7 +37,7 @@ describe('API Service', () => {
     let capturedHeaders: Headers | undefined;
 
     server.use(
-      http.get(`${BASE_URL}/todo`, ({ request }) => {
+      http.get(`${BASE_URL}/todo/`, ({ request }) => {
         capturedHeaders = request.headers;
         return HttpResponse.json([]);
       })
@@ -53,14 +53,14 @@ describe('API Service', () => {
     let refreshCallCount = 0;
 
     server.use(
-      http.get(`${BASE_URL}/todo`, () => {
+      http.get(`${BASE_URL}/todo/`, () => {
         todoCallCount++;
         if (todoCallCount === 1) {
           return new HttpResponse(null, { status: 401 });
         }
         return HttpResponse.json([{ id: 1, title: 'Refreshed Todo' }]);
       }),
-      http.post(`${BASE_URL}/token/refresh`, () => {
+      http.post(`${BASE_URL}/token/refresh/`, () => {
         refreshCallCount++;
         return HttpResponse.json({ message: 'Refreshed' });
       })
@@ -75,10 +75,10 @@ describe('API Service', () => {
 
   it('should notify unauthorized observers if refresh fails', async () => {
     server.use(
-      http.get(`${BASE_URL}/todo`, () => {
+      http.get(`${BASE_URL}/todo/`, () => {
         return new HttpResponse(null, { status: 401 });
       }),
-      http.post(`${BASE_URL}/token/refresh`, () => {
+      http.post(`${BASE_URL}/token/refresh/`, () => {
         return new HttpResponse(null, { status: 401 }); // Refresh also failed
       })
     );
@@ -99,17 +99,17 @@ describe('API Service', () => {
     let patchCalls = 0;
 
     server.resetHandlers(
-      http.get(`${BASE_URL}/todo`, () => {
+      http.get(`${BASE_URL}/todo/`, () => {
         todoCalls++;
         if (todoCalls === 1) return new HttpResponse(null, { status: 401 });
         return HttpResponse.json([]);
       }),
-      http.patch(`${BASE_URL}/todo/1`, () => {
+      http.patch(`${BASE_URL}/todo/1/`, () => {
         patchCalls++;
         if (patchCalls === 1) return new HttpResponse(null, { status: 401 });
         return HttpResponse.json({});
       }),
-      http.post(`${BASE_URL}/token/refresh`, async () => {
+      http.post(`${BASE_URL}/token/refresh/`, async () => {
         refreshCallCount++;
         await new Promise((resolve) => setTimeout(resolve, 50));
         return HttpResponse.json({ message: 'Refreshed' });
