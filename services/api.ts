@@ -216,7 +216,7 @@ export const api = {
   },
 
   updateTodo: async (id: string | number, todo: Partial<Todo>): Promise<Todo> => {
-    const response = await fetchClient(`/todo/${id}/`, {
+    const response = await fetchClient(`/todo/${encodeURIComponent(id)}/`, {
       method: 'PATCH',
       body: JSON.stringify(todo),
     });
@@ -224,7 +224,7 @@ export const api = {
   },
 
   deleteTodo: async (id: string | number): Promise<void> => {
-    const response = await fetchClient(`/todo/${id}/`, {
+    const response = await fetchClient(`/todo/${encodeURIComponent(id)}/`, {
       method: 'DELETE',
     });
     // Use handleResponse to parse errors or consume body on success
