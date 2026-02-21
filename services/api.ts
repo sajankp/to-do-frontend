@@ -31,7 +31,7 @@ const fetchClient = async (endpoint: string, options: RequestInit = {}): Promise
   // If unauthorized, attempt to refresh token
   if (response.status === 401) {
     // Prevent infinite loops: Don't refresh if the failed request WAS a refresh attempt
-    if (endpoint === '/token/refresh') {
+    if (endpoint === '/token/refresh/') {
       return response;
     }
 
@@ -40,7 +40,7 @@ const fetchClient = async (endpoint: string, options: RequestInit = {}): Promise
         try {
           // Call refresh endpoint directly (bypass wrapper to avoid recursion loop check issues)
           // We use 'include' to send the refresh_token cookie
-          const refreshResponse = await fetch(`${BASE_URL}/token/refresh`, {
+          const refreshResponse = await fetch(`${BASE_URL}/token/refresh/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -152,7 +152,7 @@ export const api = {
     }
 
     // Spec says: "Set HttpOnly cookies instead of returning tokens in body"
-    const response = await fetch(`${BASE_URL}/token`, {
+    const response = await fetch(`${BASE_URL}/token/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -165,7 +165,7 @@ export const api = {
   },
 
   register: async (username: string, email: string, password: string): Promise<boolean> => {
-    const response = await fetchClient('/user', {
+    const response = await fetchClient('/user/', {
       method: 'POST',
       body: JSON.stringify({ username, email, password }),
     });
@@ -174,7 +174,7 @@ export const api = {
 
   logout: async (): Promise<void> => {
     try {
-      await fetchClient('/auth/logout', {
+      await fetchClient('/auth/logout/', {
         method: 'POST',
       });
     } finally {
@@ -184,7 +184,7 @@ export const api = {
   },
 
   getCurrentUser: async (): Promise<User> => {
-    const response = await fetchClient('/user/me');
+    const response = await fetchClient('/user/me/');
     return handleResponse(response);
   },
 
@@ -194,7 +194,9 @@ export const api = {
     if (completed !== undefined) {
       params.append('completed', completed.toString());
     }
-    const response = await fetchClient(`/todo?${params.toString()}`, {
+    const paramStr = params.toString();
+    const query = paramStr ? `?${paramStr}` : '';
+    const response = await fetchClient(`/todo/${query}`, {
       method: 'GET',
     });
     return handleResponse<Todo[]>(response);
@@ -206,7 +208,7 @@ export const api = {
     priority: string,
     due_date: string
   ): Promise<Todo> => {
-    const response = await fetchClient('/todo', {
+    const response = await fetchClient('/todo/', {
       method: 'POST',
       body: JSON.stringify({ title, description, priority, due_date }),
     });
@@ -214,7 +216,7 @@ export const api = {
   },
 
   updateTodo: async (id: string | number, todo: Partial<Todo>): Promise<Todo> => {
-    const response = await fetchClient(`/todo/${id}`, {
+    const response = await fetchClient(`/todo/${encodeURIComponent(id)}/`, {
       method: 'PATCH',
       body: JSON.stringify(todo),
     });
@@ -222,7 +224,7 @@ export const api = {
   },
 
   deleteTodo: async (id: string | number): Promise<void> => {
-    const response = await fetchClient(`/todo/${id}`, {
+    const response = await fetchClient(`/todo/${encodeURIComponent(id)}/`, {
       method: 'DELETE',
     });
     // Use handleResponse to parse errors or consume body on success
